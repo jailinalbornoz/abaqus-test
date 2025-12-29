@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Abaqus Test — Portfolios</title>
+
+    <!-- Bootstrap 5 (CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+  </head>
+
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <span class="navbar-brand">Abaqus Test</span>
+        <span class="navbar-text text-white-50">Django + DRF — Portfolios</span>
+      </div>
+    </nav>
+
+    <main class="container py-4">
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="p-4 bg-white border rounded-3">
+            <h1 class="h4 mb-2">Portfolio Analytics API</h1>
+            <p class="mb-0 text-muted">
+              Home de prueba para ejecutar rápidamente el flujo: ETL → Timeseries → Trades → Charts.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white">
+              <strong>Endpoints principales</strong>
+              <div class="text-muted small">Ejemplos con Portfolio 1 y rango por defecto</div>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <a class="btn btn-primary"
+                   href="/api/portfolios/1/timeseries/?start=2022-02-15&end=2022-08-01"
+                   target="_blank">
+                  Ver Timeseries (JSON)
+                </a>
+
+                <a class="btn btn-outline-primary"
+                   href="/portfolios/1/charts/?start=2022-02-15&end=2022-08-01"
+                   target="_blank">
+                  Ver Charts (HTML)
+                </a>
+
+                <a class="btn btn-outline-secondary"
+                   href="/admin/"
+                   target="_blank">
+                  Admin
+                </a>
+              </div>
+
+              <hr class="my-4" />
+
+              <h2 class="h6 mb-2">Trade (POST)</h2>
+              <p class="text-muted small mb-2">
+                Ejecuta el bonus de compra/venta (15-05-2022). Pégalo en Postman o curl.
+              </p>
+
+              <div class="mb-2">
+                <span class="badge text-bg-dark">POST</span>
+                <code>/api/portfolios/1/trades/</code>
+              </div>
+
+              <pre class="bg-light border rounded p-3 small mb-0"><code>{
+  "date": "2022-05-15",
+  "legs": [
+    { "asset": "EEUU",   "side": "SELL", "amount_usd": 200000000 },
+    { "asset": "Europa", "side": "BUY",  "amount_usd": 200000000 }
+  ]
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white">
+              <strong>Checklist de ejecución</strong>
+            </div>
+            <div class="card-body">
+              <ol class="mb-0">
+                <li>Ejecutar migraciones</li>
+                <li>Cargar Excel con el comando ETL</li>
+                <li>Probar <code>timeseries</code></li>
+                <li>Ejecutar un <code>trade</code></li>
+                <li>Ver <code>charts</code> para comparar</li>
+              </ol>
+
+              <hr class="my-4" />
+
+              <h3 class="h6 mb-2">Comandos</h3>
+              <pre class="bg-light border rounded p-3 small mb-0"><code>python manage.py migrate
+python manage.py load_datos_xlsx datos.xlsx --force
+python manage.py runserver</code></pre>
+            </div>
+          </div>
+
+          <div class="alert alert-info mt-4 mb-0">
+            <strong>Nota:</strong> Si <code>timeseries</code> devuelve vacío o error,
+            revisa que el ETL haya creado <code>InitialHolding</code> y <code>Price</code> para 2022-02-15.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
