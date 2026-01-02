@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from decimal import Decimal
 from datetime import date
 from typing import Iterable
@@ -13,6 +14,8 @@ from portfolios.models import Asset, Portfolio, Price, InitialHolding, DataImpor
 
 START_DATE_DEFAULT = date(2022, 2, 15)
 V0_DEFAULT = Decimal("1000000000")
+
+logger = logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------
@@ -120,87 +123,109 @@ def import_datos_xlsx(
     file_hash = file_sha256(path)
 
     if not force:
-        existing = DataImport.objects.filter(file_hash=file_hash).first()
+        existing = DataImport.objects.filter(file_hash=file_hash, status="SUCCESS").first()
         if existing:
+            logger.info("Import saltado: hash ya procesado (%s)", file_hash)
             return existing
 
     # --- Fase 1: lectura ---
+    logger.info("Iniciando import %s (start_date=%s)", path, start_date)
     wb = load_workbook(filename=path, data_only=True)
     weights_1, weights_2 = read_weights(wb, start_date)
     price_rows = list(read_prices(wb))
 
-    with transaction.atomic():
+    data_import = DataImport.objects.create(
+        source_name=path.split("/")[-1],
+        file_hash=file_hash,
+        status="STARTED",
+    )
 
-        data_import = DataImport.objects.create(
-            source_name=path.split("/")[-1],
-            file_hash=file_hash,
-            status="SUCCESS",
-        )
+    try:
+        with transaction.atomic():
 
-        # --- Fase 2: dominio base ---
-        p1, _ = Portfolio.objects.get_or_create(
-            name="Portfolio 1",
-            defaults={"start_date": start_date, "initial_value": v0},
-        )
-        p2, _ = Portfolio.objects.get_or_create(
-            name="Portfolio 2",
-            defaults={"start_date": start_date, "initial_value": v0},
-        )
-
-        all_codes = set(weights_1) | set(weights_2) | {c for c, _, _ in price_rows}
-
-        Asset.objects.bulk_create(
-            [Asset(code=c, name=c) for c in all_codes],
-            ignore_conflicts=True,
-            batch_size=500,
-        )
-
-        assets = {a.code: a for a in Asset.objects.filter(code__in=all_codes)}
-
-        # --- Fase 3: precios ---
-        prices = [
-            Price(asset=assets[c], date=dt, price=px)
-            for c, dt, px in price_rows
-            if c in assets
-        ]
-
-        created = Price.objects.bulk_create(
-            prices, ignore_conflicts=True, batch_size=5000
-        )
-
-        data_import.rows_inserted = len(created)
-        data_import.rows_updated = 0
-
-        # --- Holdings iniciales ---
-        if force:
-            InitialHolding.objects.filter(portfolio__in=[p1, p2]).delete()
-
-        prices_t0 = {
-            p.asset_id: Decimal(p.price)
-            for p in Price.objects.filter(date=start_date)
-        }
-
-        def create_holdings(portfolio, weights):
-            rows = []
-            for code, weight in weights.items():
-                asset = assets.get(code)
-                px0 = prices_t0.get(asset.id) if asset else None
-                if px0:
-                    qty = (weight * v0) / px0
-                    rows.append(
-                        InitialHolding(
-                            portfolio=portfolio,
-                            asset=asset,
-                            quantity=qty,
-                        )
-                    )
-            InitialHolding.objects.bulk_create(
-                rows, ignore_conflicts=True, batch_size=500
+            # --- Fase 2: dominio base ---
+            p1, _ = Portfolio.objects.get_or_create(
+                name="Portfolio 1",
+                defaults={"start_date": start_date, "initial_value": v0},
+            )
+            p2, _ = Portfolio.objects.get_or_create(
+                name="Portfolio 2",
+                defaults={"start_date": start_date, "initial_value": v0},
             )
 
-        create_holdings(p1, weights_1)
-        create_holdings(p2, weights_2)
+            all_codes = set(weights_1) | set(weights_2) | {c for c, _, _ in price_rows}
 
-        data_import.save()
+            created_assets = Asset.objects.bulk_create(
+                [Asset(code=c, name=c) for c in all_codes],
+                ignore_conflicts=True,
+                batch_size=500,
+            )
+            assets_created = len(created_assets)
+
+            assets = {a.code: a for a in Asset.objects.filter(code__in=all_codes)}
+
+            # --- Fase 3: precios ---
+            prices = [
+                Price(asset=assets[c], date=dt, price=px)
+                for c, dt, px in price_rows
+                if c in assets
+            ]
+
+            created_prices = Price.objects.bulk_create(
+                prices, ignore_conflicts=True, batch_size=5000
+            )
+
+            data_import.rows_inserted = len(created_prices)
+            data_import.rows_updated = 0
+
+            # --- Holdings iniciales ---
+            if force:
+                InitialHolding.objects.filter(portfolio__in=[p1, p2]).delete()
+
+            prices_t0 = {
+                p.asset_id: Decimal(p.price)
+                for p in Price.objects.filter(date=start_date)
+            }
+
+            def create_holdings(portfolio, weights):
+                rows = []
+                for code, weight in weights.items():
+                    asset = assets.get(code)
+                    px0 = prices_t0.get(asset.id) if asset else None
+                    if px0:
+                        qty = (weight * v0) / px0
+                        rows.append(
+                            InitialHolding(
+                                portfolio=portfolio,
+                                asset=asset,
+                                quantity=qty,
+                            )
+                        )
+                InitialHolding.objects.bulk_create(
+                    rows, ignore_conflicts=True, batch_size=500
+                )
+                return len(rows)
+
+            holdings_created = create_holdings(p1, weights_1) + create_holdings(p2, weights_2)
+
+            data_import.status = "SUCCESS"
+            data_import.notes = (
+                f"assets_created={assets_created}; prices_created={len(created_prices)}; "
+                f"holdings_created={holdings_created}"
+            )
+            data_import.save()
+
+        logger.info(
+            "Import completado (assets=%s, prices=%s, holdings=%s)",
+            assets_created,
+            len(created_prices),
+            holdings_created,
+        )
+    except Exception as exc:
+        logger.exception("Import fallo y se hara rollback completo")
+        data_import.status = "FAILED"
+        data_import.notes = str(exc)
+        data_import.save(update_fields=["status", "notes"])
+        raise
 
     return data_import

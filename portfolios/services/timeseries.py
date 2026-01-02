@@ -64,7 +64,11 @@ def portfolio_timeseries(*, portfolio_id: int, start: date, end: date) -> dict:
         if tr.side == "SELL":
             delta = -delta
 
-        delta_qty_by_date_asset[(tr.date, tr.asset_id)] += delta
+        # Trades anteriores al start ajustan el estado base
+        if tr.date < start:
+            base_qty[tr.asset_id] = base_qty.get(tr.asset_id, Decimal("0")) + delta
+        else:
+            delta_qty_by_date_asset[(tr.date, tr.asset_id)] += delta
 
     # ------------------------------------------------------------------
     # 3) Precios historicos en el rango solicitado
@@ -76,6 +80,8 @@ def portfolio_timeseries(*, portfolio_id: int, start: date, end: date) -> dict:
         prices_by_date[pr.date][pr.asset_id] = Decimal(pr.price)
         
     dates = sorted(prices_by_date.keys())
+    if not dates:
+        raise ValueError("No hay precios disponibles en el rango solicitado")
 
     # ------------------------------------------------------------------
     # serie temporal
@@ -86,7 +92,7 @@ def portfolio_timeseries(*, portfolio_id: int, start: date, end: date) -> dict:
 
     for dt in dates:
         # --------------------------------------------------------------
-        # 4.1) Aplicar trades del día dt
+        # 4.1) Aplicar trades del dia dt
         # --------------------------------------------------------------
         # Actualizamos cantidades:
         # q_{i,t} = q_{i,t-1} + delta_qty_{i,t}

@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError as DRFValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from portfolios.apis.utils import inline_serializer
 from portfolios.services.trades import trade_create, TradeLegInput
@@ -34,11 +36,14 @@ class PortfolioTradeCreateApi(APIView):
             for leg in input_serializer.validated_data["legs"]
         ]
 
-        created = trade_create(
-            portfolio_id=portfolio_id,
-            dt=input_serializer.validated_data["date"],
-            legs=legs,
-        )
+        try:
+            created = trade_create(
+                portfolio_id=portfolio_id,
+                dt=input_serializer.validated_data["date"],
+                legs=legs,
+            )
+        except DjangoValidationError as exc:
+            raise DRFValidationError(exc.message_dict or exc.messages or str(exc))
 
         output_serializer = self.OutputSerializer({"created": len(created)})
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)

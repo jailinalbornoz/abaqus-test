@@ -1,27 +1,13 @@
 <!doctype html>
+{% load static %}
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Portfolio Charts</title>
 
-  <!-- Bootstrap (UI rápida y entendible) -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <style>
-    body { background: #f6f8fb; }
-    .card { border: 0; border-radius: 14px; }
-    .shadow-soft { box-shadow: 0 8px 24px rgba(16,24,40,.08); }
-    .muted { color: #667085; }
-    .kpi { font-variant-numeric: tabular-nums; }
-    .chart-wrap { position: relative; height: 360px; }
-    @media (max-width: 768px) { .chart-wrap { height: 300px; } }
-    .badge-soft { background: rgba(13,110,253,.08); color: #0d6efd; border: 1px solid rgba(13,110,253,.12); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-  </style>
+  <link rel="stylesheet" href="{% static 'portfolios/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'portfolios/css/charts.css' %}">
 </head>
 
 <body>
@@ -30,26 +16,24 @@
       <div>
         <h1 class="h3 mb-1">Portfolio Charts</h1>
         <div class="muted small">
-          Vista rapida para explicar el JSON: valor del portafolio, composición por activo y drawdown.
+          Vista rapida para explicar el JSON: valor del portafolio, composicion por activo y drawdown.
         </div>
       </div>
 
       <div class="d-flex gap-2 align-items-center">
-        <span class="badge badge-soft rounded-pill px-3 py-2" id="rangeBadge">Rango: —</span>
+        <span class="badge badge-soft rounded-pill px-3 py-2" id="rangeBadge">Rango: --</span>
         <button class="btn btn-outline-primary btn-sm" id="btnReload" type="button">Recargar</button>
       </div>
     </div>
 
-    <!-- Estado / errores -->
     <div id="statusArea" class="mb-3"></div>
 
-    <!-- KPIs (explican “qué pasó” en el rango) -->
     <div class="row g-3 mb-3">
       <div class="col-6 col-lg-3">
         <div class="card shadow-soft h-100">
           <div class="card-body">
             <div class="small text-uppercase text-muted">Valor final</div>
-            <div class="h4 mb-0 kpi" id="kpiValue">—</div>
+            <div class="h4 mb-0 kpi" id="kpiValue">--</div>
             <div class="muted small mt-1">Ultimo <span class="mono">V</span> del rango</div>
           </div>
         </div>
@@ -59,7 +43,7 @@
         <div class="card shadow-soft h-100">
           <div class="card-body">
             <div class="small text-uppercase text-muted">Retorno</div>
-            <div class="h4 mb-0 kpi" id="kpiReturn">—</div>
+            <div class="h4 mb-0 kpi" id="kpiReturn">--</div>
             <div class="muted small mt-1">(Vfinal/Vinicial) - 1</div>
           </div>
         </div>
@@ -69,7 +53,7 @@
         <div class="card shadow-soft h-100">
           <div class="card-body">
             <div class="small text-uppercase text-muted">Volatilidad</div>
-            <div class="h4 mb-0 kpi" id="kpiVol">—</div>
+            <div class="h4 mb-0 kpi" id="kpiVol">--</div>
             <div class="muted small mt-1">Std de retornos (simple)</div>
           </div>
         </div>
@@ -79,14 +63,13 @@
         <div class="card shadow-soft h-100">
           <div class="card-body">
             <div class="small text-uppercase text-muted">Max. drawdown</div>
-            <div class="h4 mb-0 kpi" id="kpiDD">—</div>
+            <div class="h4 mb-0 kpi" id="kpiDD">--</div>
             <div class="muted small mt-1">Peor caida desde maximo</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Descripción del JSON en lenguaje simple -->
     <div class="card shadow-soft mb-3">
       <div class="card-body">
         <div class="row g-3">
@@ -107,8 +90,8 @@
             <div class="muted small">
               <ol class="mb-0">
                 <li><b>Valor V(t)</b>: muestra tendencia del portafolio (sube/baja) en el rango.</li>
-                <li><b>Pesos (stacked)</b>: muestra <i>en qué activos estabas expuesto</i> y como cambio la mezcla. Siempre suma 100%.</li>
-                <li><b>Drawdown</b>: muestra el riesgo de “caidas” desde máximos; util para explicar períodos de estres.</li>
+                <li><b>Pesos (stacked)</b>: muestra en que activos estabas expuesto y como cambio la mezcla. Siempre suma 100%.</li>
+                <li><b>Drawdown</b>: muestra el riesgo de caidas desde maximos; util para explicar periodos de estres.</li>
               </ol>
             </div>
           </div>
@@ -116,7 +99,6 @@
       </div>
     </div>
 
-    <!-- Charts -->
     <div class="row g-3">
       <div class="col-12">
         <div class="card shadow-soft">
@@ -125,10 +107,10 @@
               <div>
                 <h2 class="h5 mb-0">1) Evolucion del valor del portafolio</h2>
                 <div class="muted small">
-                  Que muestra: <span class="mono">rows[].V</span> a través del tiempo. Útil para “cómo rindió”.
+                  Que muestra: <span class="mono">rows[].V</span> a traves del tiempo. Util para ver como rindio.
                 </div>
               </div>
-              <div class="small text-muted" id="vMeta">—</div>
+              <div class="small text-muted" id="vMeta">--</div>
             </div>
             <div class="chart-wrap"><canvas id="vChart"></canvas></div>
           </div>
@@ -140,12 +122,12 @@
           <div class="card-body">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
               <div>
-                <h2 class="h5 mb-0">2) Composición del portafolio (pesos por activo)</h2>
+                <h2 class="h5 mb-0">2) Composicion del portafolio (pesos por activo)</h2>
                 <div class="muted small">
-                  Qué muestra: <span class="mono">rows[].weights[asset]</span>. Área apilada: siempre suma 100%.
+                  Que muestra: <span class="mono">rows[].weights[asset]</span>. Area apilada: siempre suma 100%.
                 </div>
               </div>
-              <div class="small text-muted" id="wMeta">—</div>
+              <div class="small text-muted" id="wMeta">--</div>
             </div>
             <div class="chart-wrap"><canvas id="wChart"></canvas></div>
           </div>
@@ -157,12 +139,12 @@
           <div class="card-body">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
               <div>
-                <h2 class="h5 mb-0">3) Drawdown (caída desde máximos)</h2>
+                <h2 class="h5 mb-0">3) Drawdown (caida desde maximos)</h2>
                 <div class="muted small">
-                  Qué muestra: % de caída desde el máximo histórico dentro del rango (0% es máximo, negativo es caída).
+                  Que muestra: % de caida desde el maximo historico dentro del rango (0% es maximo, negativo es caida).
                 </div>
               </div>
-              <div class="small text-muted" id="ddMeta">—</div>
+              <div class="small text-muted" id="ddMeta">--</div>
             </div>
             <div class="chart-wrap"><canvas id="ddChart"></canvas></div>
           </div>
@@ -171,265 +153,11 @@
     </div>
 
     <div class="mt-4 muted small">
-      Nota: KPIs calculados desde V(t) en frontend solo para visualización rápida.
+      Nota: KPIs calculados desde V(t) en frontend solo para visualizacion rapida.
     </div>
   </div>
 
-  <script>
-    // -----------------------------
-    // Config y helpers (simple)
-    // -----------------------------
-    const fmtUSD = new Intl.NumberFormat("es-CL", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-    const fmtPct = new Intl.NumberFormat("es-CL", { style: "percent", maximumFractionDigits: 2 });
-
-    let charts = { v: null, w: null, dd: null };
-    let abortCtl = null;
-
-    function setStatus(type, message) {
-      const el = document.getElementById("statusArea");
-      if (!message) { el.innerHTML = ""; return; }
-      el.innerHTML = `<div class="alert alert-${type} mb-0" role="alert">${escapeHtml(message)}</div>`;
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function destroyCharts() {
-      Object.values(charts).forEach(ch => ch?.destroy?.());
-      charts = { v: null, w: null, dd: null };
-    }
-
-    function getPortfolioId() {
-      const parts = new URL(window.location.href).pathname.split("/").filter(Boolean);
-      // Esperado: /portfolios/<id>/charts/
-      return parts[1];
-    }
-
-    function getRange() {
-      const url = new URL(window.location.href);
-      return {
-        start: url.searchParams.get("start") || "2022-02-15",
-        end: url.searchParams.get("end") || "2022-08-01",
-      };
-    }
-
-    // Retornos simples desde V(t)
-    function calcReturns(V) {
-      const r = [];
-      for (let i = 1; i < V.length; i++) {
-        const prev = V[i - 1];
-        const cur = V[i];
-        if (isFinite(prev) && isFinite(cur) && prev !== 0) r.push(cur / prev - 1);
-      }
-      return r;
-    }
-
-    function mean(arr) {
-      return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-    }
-
-    function stdev(arr) {
-      if (arr.length < 2) return 0;
-      const m = mean(arr);
-      const v = mean(arr.map(x => (x - m) ** 2));
-      return Math.sqrt(v);
-    }
-
-    // Drawdown: (V / maxHastaAhora) - 1
-    function calcDrawdown(V) {
-      let peak = -Infinity;
-      return V.map(v => {
-        if (v > peak) peak = v;
-        return peak > 0 ? (v / peak - 1) : 0;
-      });
-    }
-
-    function validatePayload(data) {
-      if (!data || typeof data !== "object") throw new Error("Respuesta inválida: el JSON no es objeto.");
-      if (!Array.isArray(data.rows)) throw new Error("Respuesta inválida: falta 'rows'.");
-      if (!Array.isArray(data.assets)) throw new Error("Respuesta inválida: falta 'assets'.");
-    }
-
-    async function fetchTimeseries({ portfolioId, start, end, signal }) {
-      const api = `/api/portfolios/${portfolioId}/timeseries/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
-      const res = await fetch(api, { signal });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-      validatePayload(data);
-      return data;
-    }
-
-    // -----------------------------
-    // Charts
-    // -----------------------------
-    function initChartDefaults() {
-      Chart.defaults.font.family = "system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      Chart.defaults.plugins.legend.position = "bottom";
-      Chart.defaults.plugins.tooltip.mode = "index";
-      Chart.defaults.plugins.tooltip.intersect = false;
-    }
-
-    function buildValueChart({ labels, V }) {
-      return new Chart(document.getElementById("vChart"), {
-        type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: "Valor del portafolio V(t)",
-            data: V,
-            tension: 0.25,
-            pointRadius: 0,
-            borderWidth: 2,
-            fill: true
-          }]
-        },
-        options: {
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          scales: {
-            y: { ticks: { callback: (val) => fmtUSD.format(val) } }
-          }
-        }
-      });
-    }
-
-    function buildWeightsChart({ labels, rows, assets }) {
-      const datasets = assets.map(a => ({
-        label: a,
-        data: rows.map(r => Number((r.weights && r.weights[a]) ?? 0)),
-        pointRadius: 0,
-        borderWidth: 1,
-        tension: 0.25,
-        fill: true,
-        stack: "weights"
-      }));
-
-      return new Chart(document.getElementById("wChart"), {
-        type: "line",
-        data: { labels, datasets },
-        options: {
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `${ctx.dataset.label}: ${fmtPct.format(ctx.parsed.y)}`
-              }
-            }
-          },
-          scales: {
-            y: {
-              stacked: true,
-              min: 0,
-              max: 1,
-              ticks: { callback: (v) => fmtPct.format(v) }
-            }
-          }
-        }
-      });
-    }
-
-    function buildDrawdownChart({ labels, dd }) {
-      return new Chart(document.getElementById("ddChart"), {
-        type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: "Drawdown",
-            data: dd,
-            tension: 0.25,
-            pointRadius: 0,
-            borderWidth: 2,
-            fill: true
-          }]
-        },
-        options: {
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `Drawdown: ${fmtPct.format(ctx.parsed.y)}`
-              }
-            }
-          },
-          scales: {
-            y: { ticks: { callback: (v) => fmtPct.format(v) } }
-          }
-        }
-      });
-    }
-
-    function setKpis({ V }) {
-      const v0 = V[0] ?? 0;
-      const vT = V[V.length - 1] ?? 0;
-      const ret = (v0 && vT) ? (vT / v0 - 1) : 0;
-
-      const r = calcReturns(V);
-      const vol = stdev(r);
-
-      const dd = calcDrawdown(V);
-      const maxDD = dd.length ? Math.min(...dd) : 0;
-
-      document.getElementById("kpiValue").textContent = isFinite(vT) ? fmtUSD.format(vT) : "—";
-      document.getElementById("kpiReturn").textContent = isFinite(ret) ? fmtPct.format(ret) : "—";
-      document.getElementById("kpiVol").textContent = isFinite(vol) ? fmtPct.format(vol) : "—";
-      document.getElementById("kpiDD").textContent = isFinite(maxDD) ? fmtPct.format(maxDD) : "—";
-
-      document.getElementById("ddMeta").textContent = `Mínimo: ${fmtPct.format(maxDD)}`;
-      return dd;
-    }
-
-    // -----------------------------
-    // Run
-    // -----------------------------
-    async function load() {
-      destroyCharts();
-      setStatus("info", "Cargando datos…");
-
-      if (abortCtl) abortCtl.abort();
-      abortCtl = new AbortController();
-
-      const portfolioId = getPortfolioId();
-      const { start, end } = getRange();
-
-      document.getElementById("rangeBadge").textContent = `Rango: ${start} → ${end}`;
-
-      const data = await fetchTimeseries({ portfolioId, start, end, signal: abortCtl.signal });
-
-      if (!data.rows.length) {
-        setStatus("warning", "No hay datos en el rango seleccionado.");
-        return;
-      }
-
-      const labels = data.rows.map(r => r.date);
-      const V = data.rows.map(r => Number(r.V ?? 0));
-
-      document.getElementById("vMeta").textContent = `${labels.length} puntos`;
-      document.getElementById("wMeta").textContent = `${(data.assets || []).length} activos`;
-
-      initChartDefaults();
-
-      const dd = setKpis({ V });
-
-      charts.v = buildValueChart({ labels, V });
-      charts.w = buildWeightsChart({ labels, rows: data.rows, assets: data.assets });
-      charts.dd = buildDrawdownChart({ labels, dd });
-
-      setStatus(null, null);
-    }
-
-    document.getElementById("btnReload").addEventListener("click", () => {
-      load().catch(err => setStatus("danger", err.message));
-    });
-
-    load().catch(err => setStatus("danger", err.message));
-  </script>
+  <script src="{% static 'portfolios/js/chart.umd.min.js' %}" defer></script>
+  <script src="{% static 'portfolios/js/charts.js' %}" defer></script>
 </body>
 </html>
